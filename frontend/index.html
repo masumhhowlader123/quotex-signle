@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotex AI Vision - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl space-y-6">
+        <div class="text-center">
+            <h1 class="text-2xl font-extrabold tracking-wider text-emerald-400">QUOTEX AI VISION</h1>
+            <p class="text-slate-400 text-xs mt-1">Please enter your credentials to access AI Signals</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Username</label>
+                <input type="text" id="login-user" placeholder="Enter username" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Password</label>
+                <input type="password" id="login-pass" placeholder="Enter password" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+            </div>
+            <p id="login-error" class="text-xs text-rose-400 text-center hidden"></p>
+            <button onclick="handleLogin()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl transition duration-200 shadow-lg shadow-emerald-500/20">
+                Login to App
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN (Initially Hidden) -->
+    <div id="app-screen" class="hidden w-full max-w-xl space-y-6 py-6">
+        <div class="flex justify-between items-center bg-slate-800 border border-slate-700 px-6 py-4 rounded-2xl shadow-xl">
+            <div>
+                <h1 class="text-xl font-extrabold tracking-wider text-emerald-400">QUOTEX AI VISION</h1>
+                <p id="welcome-user-text" class="text-slate-400 text-xs">Smart Technical Analysis</p>
+            </div>
+            <button onclick="handleLogout()" class="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 font-bold rounded-xl text-xs transition">
+                Logout
+            </button>
+        </div>
+
+        <!-- ADMIN PANEL: Only visible if logged in as 'admin' -->
+        <div id="admin-panel" class="hidden bg-slate-800 border border-amber-500/40 rounded-2xl p-6 shadow-2xl space-y-4">
+            <h2 class="text-sm font-bold text-amber-400 uppercase tracking-wider">👑 Admin Panel: Manage Client Accounts</h2>
+            
+            <div class="space-y-3 bg-slate-900/60 p-4 rounded-xl border border-slate-700">
+                <p class="text-xs text-slate-300 font-semibold">Create New User:</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" id="new-client-user" placeholder="New Username" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                    <input type="text" id="new-client-pass" placeholder="New Password" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+                <p id="admin-msg" class="text-xs font-semibold hidden"></p>
+                <button onclick="createNewUser()" class="w-full py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition shadow-md">
+                    Create User Account
+                </button>
+            </div>
+
+            <!-- Existing Users List & Delete Option -->
+            <div class="space-y-2">
+                <p class="text-xs text-slate-300 font-semibold">Active Client Accounts:</p>
+                <div id="active-users-list" class="space-y-2 max-h-36 overflow-y-auto pr-1">
+                    <p class="text-xs text-slate-500 italic">No users created yet.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Box -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Upload Trading Screenshot</label>
+                <input type="file" id="chart-file" accept="image/*" onchange="previewImage(event)" class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer">
+            </div>
+            
+            <!-- Image Preview Box -->
+            <div id="image-preview-container" class="hidden border border-slate-700 rounded-xl overflow-hidden bg-slate-900 text-center p-2">
+                <p class="text-xs text-slate-400 mb-2">Uploaded Chart Preview:</p>
+                <img id="preview-img" src="" alt="Chart Preview" class="max-h-48 mx-auto rounded-lg object-contain">
+            </div>
+
+            <!-- AI Command / Correction Input Box -->
+            <div class="bg-slate-900/80 border border-slate-700 p-3 rounded-xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-bold text-amber-400 uppercase tracking-wider">🛠️ AI Command & Correction Box</label>
+                    <span id="feedback-status-text" class="text-[10px] text-slate-400">Ready for instructions</span>
+                </div>
+                <input type="text" id="ai-command-input" placeholder="e.g., Agami bar support break korle put dibi na..." class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+            </div>
+
+            <button onclick="uploadScreenshot()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl transition duration-200 shadow-lg shadow-emerald-500/20">
+                Analyze Chart with AI
+            </button>
+        </div>
+
+        <!-- Current Result Box -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3 mb-4">
+                <span class="text-slate-400 text-sm font-semibold uppercase tracking-wider">AI Live Analysis</span>
+                <span id="status-badge" class="px-3 py-1 bg-slate-700 text-slate-300 text-xs font-bold rounded-full">Waiting</span>
+            </div>
+            
+            <div id="ai-result-content" class="text-slate-300 text-sm space-y-3">
+                <p class="text-slate-500 italic">Upload a screenshot and click analyze to view live signals and Banglish logic.</p>
+            </div>
+        </div>
+
+        <!-- Signal History Box -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-750 pb-3 mb-4">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Signal History & Profit/Loss Tracker</h2>
+                <div class="text-xs space-x-2">
+                    <span class="text-emerald-400 font-bold">Win: <span id="win-count">0</span></span>
+                    <span class="text-rose-400 font-bold">Loss: <span id="loss-count">0</span></span>
+                </div>
+            </div>
+            <div id="history-list" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                <p class="text-xs text-slate-500 italic">No history yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLoggedInUser = localStorage.getItem("quotex_user") || "";
+        let isAdminLoggedIn = localStorage.getItem("quotex_is_admin") === "true";
+        let winTotal = 0;
+        let lossTotal = 0;
+
+        // Page load hole check korbe age theke login kora ache kina
+        window.onload = function() {
+            if (currentLoggedInUser) {
+                showAppScreen(currentLoggedInUser, isAdminLoggedIn);
+            }
+        };
+
+        async function handleLogin() {
+            const user = document.getElementById("login-user").value.trim();
+            const pass = document.getElementById("login-pass").value.trim();
+            const errorText = document.getElementById("login-error");
+
+            if (!user || !pass) {
+                errorText.innerText = "Please enter both username and password!";
+                errorText.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username: user, password: pass })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    currentLoggedInUser = user;
+                    isAdminLoggedIn = data.is_admin;
+                    
+                    // LocalStorage- a save kore rakha jate bar bar login na korte hoy
+                    localStorage.setItem("quotex_user", user);
+                    localStorage.setItem("quotex_is_admin", data.is_admin);
+
+                    showAppScreen(user, data.is_admin);
+                } else {
+                    errorText.innerText = data.detail || "Invalid credentials!";
+                    errorText.classList.remove("hidden");
+                }
+            } catch (err) {
+                errorText.innerText = "Failed to connect to server!";
+                errorText.classList.remove("hidden");
+            }
+        }
+
+        function showAppScreen(user, isAdmin) {
+            document.getElementById("login-screen").classList.add("hidden");
+            document.getElementById("app-screen").classList.remove("hidden");
+            document.getElementById("welcome-user-text").innerText = `Logged in as: ${user}`;
+
+            if (isAdmin) {
+                document.getElementById("admin-panel").classList.remove("hidden");
+                loadUsersList();
+            } else {
+                document.getElementById("admin-panel").classList.add("hidden");
+            }
+        }
+
+        async function loadUsersList() {
+            try {
+                const response = await fetch(`http://localhost:8000/users-list?admin_user=${currentLoggedInUser}`);
+                const data = await response.json();
+                const listContainer = document.getElementById("active-users-list");
+                
+                if (response.ok && data.users.length > 0) {
+                    listContainer.innerHTML = "";
+                    data.users.forEach(u => {
+                        listContainer.innerHTML += `
+                            <div class="flex justify-between items-center bg-slate-800 border border-slate-700 px-3 py-2 rounded-xl text-xs">
+                                <span class="font-medium text-slate-200">👤 ${u.username}</span>
+                                <button onclick="deleteUser('${u.username}')" class="px-2.5 py-1 bg-rose-500/20 hover:bg-rose-500 text-rose-400 hover:text-white font-bold rounded-lg border border-rose-500/30 transition text-[10px]">Delete & Block</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    listContainer.innerHTML = `<p class="text-xs text-slate-500 italic">No users created yet.</p>`;
+                }
+            } catch (err) {
+                console.error("Failed to load users");
+            }
+        }
+
+        async function createNewUser() {
+            const newUser = document.getElementById("new-client-user").value.trim();
+            const newPass = document.getElementById("new-client-pass").value.trim();
+            const msgBox = document.getElementById("admin-msg");
+
+            if (!newUser || !newPass) {
+                msgBox.innerText = "Please fill in both username and password!";
+                msgBox.className = "text-xs font-semibold text-rose-400";
+                msgBox.classList.remove("hidden");
+                return;
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/add-user", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ admin_user: currentLoggedInUser, new_username: newUser, new_password: newPass })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    msgBox.innerText = `Success! User '${newUser}' created.`;
+                    msgBox.className = "text-xs font-semibold text-emerald-400";
+                    msgBox.classList.remove("hidden");
+                    document.getElementById("new-client-user").value = "";
+                    document.getElementById("new-client-pass").value = "";
+                    loadUsersList();
+                } else {
+                    msgBox.innerText = data.detail || "Failed to create user!";
+                    msgBox.className = "text-xs font-semibold text-rose-400";
+                    msgBox.classList.remove("hidden");
+                }
+            } catch (err) {
+                msgBox.innerText = "Server connection error!";
+                msgBox.className = "text-xs font-semibold text-rose-400";
+                msgBox.classList.remove("hidden");
+            }
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Are you sure you want to delete user '${username}'? They will not be able to login anymore.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch("http://localhost:8000/delete-user", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ admin_user: currentLoggedInUser, username_to_delete: username })
+                });
+
+                if (response.ok) {
+                    loadUsersList();
+                } else {
+                    alert("Failed to delete user!");
+                }
+            } catch (err) {
+                alert("Server connection error!");
+            }
+        }
+
+        function handleLogout() {
+            // LocalStorage clear kore login screen e fire jaowa
+            localStorage.removeItem("quotex_user");
+            localStorage.removeItem("quotex_is_admin");
+            currentLoggedInUser = "";
+            isAdminLoggedIn = false;
+
+            document.getElementById("app-screen").classList.add("hidden");
+            document.getElementById("login-screen").classList.remove("hidden");
+            document.getElementById("login-user").value = "";
+            document.getElementById("login-pass").value = "";
+            document.getElementById("login-error").classList.add("hidden");
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const previewContainer = document.getElementById("image-preview-container");
+                const previewImg = document.getElementById("preview-img");
+                previewImg.src = URL.createObjectURL(file);
+                previewContainer.classList.remove("hidden");
+            }
+        }
+
+        async function uploadScreenshot() {
+            const fileInput = document.getElementById("chart-file");
+            const resultBox = document.getElementById("ai-result-content");
+            const statusBadge = document.getElementById("status-badge");
+            const historyList = document.getElementById("history-list");
+            const commandInput = document.getElementById("ai-command-input");
+
+            if (fileInput.files.length === 0) {
+                alert("Please select an image first!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            
+            if (commandInput.value.trim() !== "") {
+                formData.append("feedback", commandInput.value.trim());
+            }
+
+            resultBox.innerHTML = `<p class="text-amber-400 animate-pulse">Analyzing chart patterns & applying your commands...</p>`;
+            statusBadge.innerText = "Processing";
+            statusBadge.className = "px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full animate-pulse";
+
+            try {
+                const response = await fetch("http://localhost:8000/analyze-screenshot", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    let isTrade = data.trade_decision && data.trade_decision.includes("TRADE") && !data.trade_decision.includes("NO TRADE");
+                    let actionColor = data.action.includes("CALL") ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" : "text-rose-400 bg-rose-500/10 border-rose-500/30";
+                    let decisionBadge = isTrade 
+                        ? `<span class="px-2.5 py-1 bg-emerald-500 text-slate-950 font-extrabold rounded text-xs">✓ TRADE (Low Risk)</span>` 
+                        : `<span class="px-2.5 py-1 bg-rose-500 text-white font-extrabold rounded text-xs">✗ NO TRADE (High Risk)</span>`;
+
+                    resultBox.innerHTML = `
+                        <div class="grid grid-cols-2 gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-700">
+                            <div><span class="text-slate-500 text-xs">Asset:</span> <p class="font-bold text-white">${data.asset}</p></div>
+                            <div><span class="text-slate-500 text-xs">Action:</span> <p class="font-bold ${actionColor} px-2 py-0.5 rounded inline-block border">${data.action}</p></div>
+                            <div><span class="text-slate-500 text-xs">Expiry:</span> <p class="font-bold text-white">${data.expiry}</p></div>
+                            <div><span class="text-slate-500 text-xs">Accuracy:</span> <p class="font-bold text-amber-400">${data.accuracy}</p></div>
+                        </div>
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700 space-y-1">
+                            <p class="text-xs text-slate-400"><strong>Support/Resistance:</strong> ${data.support_resistance}</p>
+                            <p class="text-xs text-slate-400"><strong>Trend Strength:</strong> ${data.trend_strength}</p>
+                        </div>
+                        <div class="bg-emerald-950/30 border border-emerald-500/30 p-3 rounded-xl space-y-1">
+                            <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">💡 AI Banglish Logic:</p>
+                            <p class="text-xs text-slate-200 leading-relaxed">${data.banglish_logic}</p>
+                        </div>
+                        <div class="flex justify-between items-center pt-2">
+                            <span class="text-xs text-slate-400 font-semibold">Status:</span>
+                            ${decisionBadge}
+                        </div>
+                    `;
+
+                    statusBadge.innerText = "Completed";
+                    statusBadge.className = "px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full";
+
+                    if (historyList.innerHTML.includes("No history yet.")) {
+                        historyList.innerHTML = "";
+                    }
+
+                    const historyId = 'hist-' + Date.now();
+                    const historyItem = document.createElement("div");
+                    historyItem.id = historyId;
+                    historyItem.className = "bg-slate-900/80 border border-slate-700/60 p-3 rounded-xl text-xs space-y-2";
+                    historyItem.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <img src="${URL.createObjectURL(fileInput.files[0])}" class="w-10 h-10 object-cover rounded-lg border border-slate-700">
+                                <div>
+                                    <p class="font-bold text-white">${data.asset} - <span class="${data.action.includes('CALL') ? 'text-emerald-400' : 'text-rose-400'}">${data.action}</span></p>
+                                    <p class="text-slate-400 text-[10px]">Acc: ${data.accuracy} | ${new Date().toLocaleTimeString()}</p>
+                                </div>
+                            </div>
+                            <div id="pl-buttons-${historyId}" class="flex space-x-1">
+                                <button onclick="markResult('${historyId}', 'WIN')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[10px] transition">Profit</button>
+                                <button onclick="markResult('${historyId}', 'LOSS', '${data.action} ${data.asset}')" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded text-[10px] transition">Loss</button>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-300 bg-slate-800/80 p-2 rounded border border-slate-700/50"><strong>Logic:</strong> ${data.banglish_logic}</p>
+                    `;
+                    historyList.prepend(historyItem);
+
+                    commandInput.value = "";
+                    document.getElementById("feedback-status-text").innerText = "Ready for instructions";
+
+                } else {
+                    resultBox.innerHTML = `<p class="text-rose-400">Error: Analysis failed.</p>`;
+                    statusBadge.innerText = "Failed";
+                    statusBadge.className = "px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-bold rounded-full";
+                }
+            } catch (err) {
+                resultBox.innerHTML = `<p class="text-rose-400">Failed to connect to backend server.</p>`;
+                statusBadge.innerText = "Error";
+                statusBadge.className = "px-3 py-1 bg-rose-500/20 text-rose-400 text-xs font-bold rounded-full";
+            }
+        }
+
+        function markResult(id, result, details = '') {
+            const btnContainer = document.getElementById(`pl-buttons-${id}`);
+            const commandInput = document.getElementById("ai-command-input");
+            const statusText = document.getElementById("feedback-status-text");
+
+            if (result === 'WIN') {
+                winTotal++;
+                document.getElementById("win-count").innerText = winTotal;
+                btnContainer.innerHTML = `<span class="px-2 py-1 bg-emerald-500/20 text-emerald-400 font-bold rounded text-[10px] border border-emerald-500/30">✓ PROFIT SAVED</span>`;
+            } else {
+                lossTotal++;
+                document.getElementById("loss-count").innerText = lossTotal;
+                btnContainer.innerHTML = `<span class="px-2 py-1 bg-rose-500/20 text-rose-400 font-bold rounded text-[10px] border border-rose-500/30">✗ LOSS SAVED</span>`;
+                
+                commandInput.value = `Last signal (${details}) resulted in a LOSS. Avoid this mistake, analyze support/resistance more strictly.`;
+                statusText.innerText = "⚠️ Correction Loaded! Ready to re-analyze.";
+                statusText.className = "text-[10px] text-amber-400 font-bold animate-pulse";
+            }
+        }
+    </script>
+</body>
+</html>
