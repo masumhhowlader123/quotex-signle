@@ -147,7 +147,7 @@
             }
 
             try {
-                const response = await fetch("https://quotex-signle-1.onrender.com/analyze-screenshot", {
+                const response = await fetch("https://quotex-signle-1.onrender.com/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username: user, password: pass })
@@ -168,7 +168,7 @@
                     errorText.classList.remove("hidden");
                 }
             } catch (err) {
-                errorText.innerText = "Failed to connect to server!";
+                errorText.innerText = "Failed to connect to server. Please try again.";
                 errorText.classList.remove("hidden");
             }
         }
@@ -188,7 +188,7 @@
 
         async function loadUsersList() {
             try {
-                const response = await fetch(`https://quotex-signle-1.onrender.com/users-list/admin_user?admin_user=${currentLoggedInUser}`);
+                const response = await fetch(`https://quotex-signle-1.onrender.com/users-list?admin_user=${encodeURIComponent(currentLoggedInUser)}`);
                 const data = await response.json();
                 const listContainer = document.getElementById("active-users-list");
                 
@@ -223,7 +223,7 @@
             }
 
             try {
-                const response = await fetch("https://quotex-signle-1.onrender.com/analyze-screenshot", {
+                const response = await fetch("https://quotex-signle-1.onrender.com/add-user", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ admin_user: currentLoggedInUser, new_username: newUser, new_password: newPass })
@@ -255,7 +255,7 @@
             }
 
             try {
-                const response = await fetch("https://quotex-signle-1.onrender.com/analyze-screenshot", {
+                const response = await fetch("https://quotex-signle-1.onrender.com/delete-user", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ admin_user: currentLoggedInUser, username_to_delete: username })
