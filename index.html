@@ -319,7 +319,7 @@
             statusBadge.className = "px-3 py-1 bg-amber-500/20 text-amber-400 text-xs font-bold rounded-full animate-pulse";
 
             try {
-                const response = await fetch("http://localhost:8000/analyze-screenshot", {
+                const response = await fetch("https://quotex-signle-1.onrender.com/analyze-screenshot", {
                     method: "POST",
                     body: formData
                 });
