@@ -128,7 +128,7 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
     
     if not API_KEYS:
         return JSONResponse(content={
-            "asset": "Unknown", "action": "NO TRADE", "expiry": "1 Min", "accuracy": "0%",
+            "asset": "Unknown", "action": "NO TRADE", "expiry": "2 Minutes", "accuracy": "0%",
             "support_resistance": "N/A", "trend_strength": "0%", "trade_decision": "NO TRADE (High Risk)",
             "banglish_logic": "Analysis error: No Gemini API keys found in environment variables."
         })
@@ -140,25 +140,25 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes))
 
-        # সুপার ফাস্ট রেসপন্সের জন্য ছবি ছোট ও হালকা করা (512x512)
+        # ছবির সাইজ ছোট করে সুপার ফাস্ট রেসপন্স নিশ্চিত করা (512x512)
         image.thumbnail((512, 512))
 
         correction_prompt = ""
         if feedback:
             correction_prompt = f" FEEDBACK: '{feedback}'."
 
-        # অতি দ্রুত রেসপন্সের জন্য অপ্টিমাইজড ও সংক্ষিপ্ত প্রম্পট
+        # এক্সপায়ারি টাইম কঠোরভাবে ২ মিনিট সেট করার জন্য অপ্টিমাইজড প্রম্পট
         prompt = (
-            "Analyze trading chart instantly." + correction_prompt +
+            "Analyze trading chart instantly for a strict 2 MINUTES expiry trade." + correction_prompt +
             " Return ONLY a raw JSON object with these keys: "
             "{\"asset\": \"Asset Name\", "
             "\"action\": \"CALL (UP) or PUT (DOWN) or NO TRADE\", "
-            "\"expiry\": \"1 Minute\", "
+            "\"expiry\": \"2 Minutes\", "
             "\"accuracy\": \"e.g. 92%\", "
             "\"support_resistance\": \"Levels\", "
             "\"trend_strength\": \"Strength\", "
             "\"trade_decision\": \"TRADE (Low Risk) or NO TRADE (High Risk)\", "
-            "\"banglish_logic\": \"Ek line a choto kore reason Banglish a likhba.\"}"
+            "\"banglish_logic\": \"2 minutes expiry er jonno choto kore reason Banglish a likhba.\"}"
         )
 
         shuffled_keys = list(API_KEYS)
@@ -196,7 +196,7 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
         return JSONResponse(content={
             "asset": "Unknown",
             "action": "NO TRADE",
-            "expiry": "1 Min",
+            "expiry": "2 Minutes",
             "accuracy": "0%",
             "support_resistance": "N/A",
             "trend_strength": "0%",
