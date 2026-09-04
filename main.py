@@ -30,7 +30,6 @@ def load_users():
                 return json.load(f)
         except Exception:
             pass
-    # ডিফল্ট ইউজার যদি ফাইল না থাকে
     default_users = {"admin": "731491"}
     save_users(default_users)
     return default_users
@@ -74,7 +73,7 @@ class DeleteUserRequest(BaseModel):
 @app.post("/login")
 async def login(data: LoginRequest):
     global USERS_DB
-    USERS_DB = load_users() # লেটেস্ট ডাটা লোড করা
+    USERS_DB = load_users()
     if data.username in USERS_DB and USERS_DB[data.username] == data.password:
         is_admin = (data.username == "admin")
         return JSONResponse(content={"success": True, "is_admin": is_admin, "message": "Login successful!"})
@@ -93,7 +92,7 @@ async def add_user(data: NewUserRequest):
         raise HTTPException(status_code=400, detail="Username already exists!")
     
     USERS_DB[data.new_username] = data.new_password
-    save_users(USERS_DB) # ফাইলে স্থায়ীভাবে সেভ করা
+    save_users(USERS_DB)
     return JSONResponse(content={"success": True, "message": f"User '{data.new_username}' created successfully!"})
 
 @app.get("/users-list")
@@ -120,7 +119,7 @@ async def delete_user(data: DeleteUserRequest):
     
     if data.username_to_delete in USERS_DB:
         del USERS_DB[data.username_to_delete]
-        save_users(USERS_DB) # ফাইলেও আপডেট করা
+        save_users(USERS_DB)
         return JSONResponse(content={"success": True, "message": f"User '{data.username_to_delete}' deleted successfully!"})
     else:
         raise HTTPException(status_code=404, detail="User not found!")
@@ -144,21 +143,22 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes))
 
+        # স্পিড বাড়ানোর জন্য ছবি রিসাইজ ও অপটিমাইজ করা (Max 800x800)
+        image.thumbnail((800, 800))
+
         correction_prompt = ""
         if feedback:
-            correction_prompt = f" SPECIAL USER FEEDBACK/CORRECTION FROM PREVIOUS MISTAKE: '{feedback}'. Please strictly follow this instruction and fix your strategy."
+            correction_prompt = f" USER FEEDBACK: '{feedback}'."
 
+        # ফাস্ট রেসপন্সের জন্য অপ্টিমাইজড প্রম্পট
         prompt = (
-            "Analyze this trading chart screenshot for binary options." + correction_prompt +
-            " Return the response strictly as a valid JSON object with the following keys, and nothing else: "
-            "{\"asset\": \"Asset Name\", "
-            "\"action\": \"CALL (UP) or PUT (DOWN) or NO TRADE\", "
-            "\"expiry\": \"1 Minute\", "
-            "\"accuracy\": \"e.g. 92%\", "
-            "\"support_resistance\": \"e.g. Support at 1.22200 / Resistance at 1.22300\", "
-            "\"trend_strength\": \"e.g. 88%\", "
+            "Analyze binary options trading chart quickly." + correction_prompt +
+            " Return ONLY a raw JSON object with these exact keys: "
+            "{\"asset\": \"Name\", \"action\": \"CALL (UP) or PUT (DOWN) or NO TRADE\", "
+            "\"expiry\": \"1 Minute\", \"accuracy\": \"e.g. 92%\", "
+            "\"support_resistance\": \"Levels\", \"trend_strength\": \"Strength\", "
             "\"trade_decision\": \"TRADE (Low Risk) or NO TRADE (High Risk)\", "
-            "\"banglish_logic\": \"Keno CALL ba PUT dilo, tar puro technical explanation sohoj Banglish a likhba.\"}"
+            "\"banglish_logic\": \"Short reason in Banglish.\"}"
         )
 
         shuffled_keys = list(API_KEYS)
