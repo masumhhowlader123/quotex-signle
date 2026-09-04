@@ -1,11 +1,12 @@
 import os
+import random
+import json
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from PIL import Image
 import io
-import json
 from google import genai
 
 app = FastAPI()
@@ -18,13 +19,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+# ইউজার ডাটা ফাইল পাথ
+USERS_FILE = "users.json"
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+# ইউজার লোড বা ইনিশিয়ালাইজ করার ফাংশন
+def load_users():
+    if os.path.exists(USERS_FILE):
+        try:
+            with open(USERS_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    # ডিফল্ট ইউজার যদি ফাইল না থাকে
+    default_users = {"admin": "731491"}
+    save_users(default_users)
+    return default_users
 
-USERS_DB = {
-    "admin": "731491",
-}
+# ইউজার সেভ করার ফাংশন
+def save_users(users_dict):
+    with open(USERS_FILE, "w") as f:
+        json.dump(users_dict, f, indent=4)
+
+USERS_DB = load_users()
+
+# একাধিক জেমিনি এপিআই কি সংগ্রহ করার ফাংশন
+def get_gemini_clients():
+    keys = []
+    main_key = os.environ.get("GEMINI_API_KEY", "")
+    if main_key:
+        keys.append(main_key)
+    
+    for i in range(1, 11):
+        k = os.environ.get(f"GEMINI_API_KEY_{i}", "")
+        if k and k not in keys:
+            keys.append(k)
+            
+    return keys
+
+API_KEYS = get_gemini_clients()
 
 class LoginRequest(BaseModel):
     username: str
@@ -41,6 +73,8 @@ class DeleteUserRequest(BaseModel):
 
 @app.post("/login")
 async def login(data: LoginRequest):
+    global USERS_DB
+    USERS_DB = load_users() # লেটেস্ট ডাটা লোড করা
     if data.username in USERS_DB and USERS_DB[data.username] == data.password:
         is_admin = (data.username == "admin")
         return JSONResponse(content={"success": True, "is_admin": is_admin, "message": "Login successful!"})
@@ -49,6 +83,9 @@ async def login(data: LoginRequest):
 
 @app.post("/add-user")
 async def add_user(data: NewUserRequest):
+    global USERS_DB
+    USERS_DB = load_users()
+    
     if data.admin_user != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized action!")
     
@@ -56,10 +93,14 @@ async def add_user(data: NewUserRequest):
         raise HTTPException(status_code=400, detail="Username already exists!")
     
     USERS_DB[data.new_username] = data.new_password
+    save_users(USERS_DB) # ফাইলে স্থায়ীভাবে সেভ করা
     return JSONResponse(content={"success": True, "message": f"User '{data.new_username}' created successfully!"})
 
 @app.get("/users-list")
 async def get_users_list(admin_user: str):
+    global USERS_DB
+    USERS_DB = load_users()
+    
     if admin_user != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized action!")
     
@@ -68,6 +109,9 @@ async def get_users_list(admin_user: str):
 
 @app.post("/delete-user")
 async def delete_user(data: DeleteUserRequest):
+    global USERS_DB
+    USERS_DB = load_users()
+    
     if data.admin_user != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized action!")
     
@@ -76,12 +120,23 @@ async def delete_user(data: DeleteUserRequest):
     
     if data.username_to_delete in USERS_DB:
         del USERS_DB[data.username_to_delete]
+        save_users(USERS_DB) # ফাইলেও আপডেট করা
         return JSONResponse(content={"success": True, "message": f"User '{data.username_to_delete}' deleted successfully!"})
     else:
         raise HTTPException(status_code=404, detail="User not found!")
 
 @app.post("/analyze-screenshot")
 async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(None)):
+    global API_KEYS
+    API_KEYS = get_gemini_clients()
+    
+    if not API_KEYS:
+        return JSONResponse(content={
+            "asset": "Unknown", "action": "NO TRADE", "expiry": "1 Min", "accuracy": "0%",
+            "support_resistance": "N/A", "trend_strength": "0%", "trade_decision": "NO TRADE (High Risk)",
+            "banglish_logic": "Analysis error: No Gemini API keys found in environment variables."
+        })
+
     if not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed.")
     
@@ -106,10 +161,26 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
             "\"banglish_logic\": \"Keno CALL ba PUT dilo, tar puro technical explanation sohoj Banglish a likhba.\"}"
         )
 
-        response = client.models.generate_content(
-            model='gemini-3.6-flash',
-            contents=[image, prompt]
-        )
+        shuffled_keys = list(API_KEYS)
+        random.shuffle(shuffled_keys)
+        
+        response = None
+        last_exception = None
+
+        for key in shuffled_keys:
+            try:
+                temp_client = genai.Client(api_key=key)
+                response = temp_client.models.generate_content(
+                    model='gemini-3.6-flash',
+                    contents=[image, prompt]
+                )
+                break
+            except Exception as ex:
+                last_exception = ex
+                continue
+
+        if response is None:
+            raise last_exception if last_exception else Exception("All API keys failed.")
 
         raw_text = response.text.strip()
         
