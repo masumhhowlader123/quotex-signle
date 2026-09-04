@@ -19,6 +19,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ক্রন জবের (cron-job.org) 404 এরর দূর করার জন্য রুট এন্ডপয়েন্ট
+@app.get("/")
+async def root():
+    return {"status": "active", "message": "Quotex AI Signal API is running successfully!"}
+
 # ইউজার ডাটা ফাইল পাথ
 USERS_FILE = "users.json"
 
@@ -140,14 +145,14 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes))
 
-        # ছবির সাইজ ছোট করে সুপার ফাস্ট রেসপন্স নিশ্চিত করা (512x512)
+        # স্পিড বাড়ানোর জন্য ছবি রিসাইজ করা (512x512)
         image.thumbnail((512, 512))
 
         correction_prompt = ""
         if feedback:
             correction_prompt = f" FEEDBACK: '{feedback}'."
 
-        # এক্সপায়ারি টাইম কঠোরভাবে ২ মিনিট সেট করার জন্য অপ্টিমাইজড প্রম্পট
+        # কঠোরভাবে ২ মিনিটের সিগন্যাল দেওয়ার জন্য অপ্টিমাইজড প্রম্পট
         prompt = (
             "Analyze trading chart instantly for a strict 2 MINUTES expiry trade." + correction_prompt +
             " Return ONLY a raw JSON object with these keys: "
