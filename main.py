@@ -22,7 +22,6 @@ app.add_middleware(
 # ইউজার ডাটা ফাইল পাথ
 USERS_FILE = "users.json"
 
-# ইউজার লোড বা ইনিশিয়ালাইজ করার ফাংশন
 def load_users():
     if os.path.exists(USERS_FILE):
         try:
@@ -34,14 +33,12 @@ def load_users():
     save_users(default_users)
     return default_users
 
-# ইউজার সেভ করার ফাংশন
 def save_users(users_dict):
     with open(USERS_FILE, "w") as f:
         json.dump(users_dict, f, indent=4)
 
 USERS_DB = load_users()
 
-# একাধিক জেমিনি এপিআই কি সংগ্রহ করার ফাংশন
 def get_gemini_clients():
     keys = []
     main_key = os.environ.get("GEMINI_API_KEY", "")
@@ -143,22 +140,25 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes))
 
-        # স্পিড বাড়ানোর জন্য ছবি রিসাইজ ও অপটিমাইজ করা (Max 800x800)
-        image.thumbnail((800, 800))
+        # ছবির সাইজ অপ্টিমাইজ করা যাতে স্পিড দ্রুত হয় কিন্তু কোয়ালিটি ঠিক থাকে
+        image.thumbnail((1024, 1024))
 
         correction_prompt = ""
         if feedback:
-            correction_prompt = f" USER FEEDBACK: '{feedback}'."
+            correction_prompt = f" SPECIAL USER FEEDBACK/CORRECTION: '{feedback}'. Follow this strictly."
 
-        # ফাস্ট রেসপন্সের জন্য অপ্টিমাইজড প্রম্পট
+        # লজিক ডিটেইলস রাখার জন্য প্রম্পট আপডেট করা হলো
         prompt = (
-            "Analyze binary options trading chart quickly." + correction_prompt +
-            " Return ONLY a raw JSON object with these exact keys: "
-            "{\"asset\": \"Name\", \"action\": \"CALL (UP) or PUT (DOWN) or NO TRADE\", "
-            "\"expiry\": \"1 Minute\", \"accuracy\": \"e.g. 92%\", "
-            "\"support_resistance\": \"Levels\", \"trend_strength\": \"Strength\", "
+            "Analyze this trading chart screenshot for binary options quickly." + correction_prompt +
+            " Return the response strictly as a valid JSON object with the following keys, and nothing else: "
+            "{\"asset\": \"Asset Name\", "
+            "\"action\": \"CALL (UP) or PUT (DOWN) or NO TRADE\", "
+            "\"expiry\": \"1 Minute\", "
+            "\"accuracy\": \"e.g. 92%\", "
+            "\"support_resistance\": \"e.g. Support at 1.22200 / Resistance at 1.22300\", "
+            "\"trend_strength\": \"e.g. 88%\", "
             "\"trade_decision\": \"TRADE (Low Risk) or NO TRADE (High Risk)\", "
-            "\"banglish_logic\": \"Short reason in Banglish.\"}"
+            "\"banglish_logic\": \"Keno CALL ba PUT dilo, tar puro technical explanation (Support/Resistance ba Trend bujhiye) sohoj Banglish a ektu detail a likhba.\"}"
         )
 
         shuffled_keys = list(API_KEYS)
