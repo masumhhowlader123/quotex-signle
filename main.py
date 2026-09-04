@@ -140,25 +140,25 @@ async def analyze_screenshot(file: UploadFile = File(...), feedback: str = Form(
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes))
 
-        # ছবির সাইজ অপ্টিমাইজ করা যাতে স্পিড দ্রুত হয় কিন্তু কোয়ালিটি ঠিক থাকে
-        image.thumbnail((1024, 1024))
+        # সুপার ফাস্ট রেসপন্সের জন্য ছবি ছোট ও হালকা করা (512x512)
+        image.thumbnail((512, 512))
 
         correction_prompt = ""
         if feedback:
-            correction_prompt = f" SPECIAL USER FEEDBACK/CORRECTION: '{feedback}'. Follow this strictly."
+            correction_prompt = f" FEEDBACK: '{feedback}'."
 
-        # লজিক ডিটেইলস রাখার জন্য প্রম্পট আপডেট করা হলো
+        # অতি দ্রুত রেসপন্সের জন্য অপ্টিমাইজড ও সংক্ষিপ্ত প্রম্পট
         prompt = (
-            "Analyze this trading chart screenshot for binary options quickly." + correction_prompt +
-            " Return the response strictly as a valid JSON object with the following keys, and nothing else: "
+            "Analyze trading chart instantly." + correction_prompt +
+            " Return ONLY a raw JSON object with these keys: "
             "{\"asset\": \"Asset Name\", "
             "\"action\": \"CALL (UP) or PUT (DOWN) or NO TRADE\", "
             "\"expiry\": \"1 Minute\", "
             "\"accuracy\": \"e.g. 92%\", "
-            "\"support_resistance\": \"e.g. Support at 1.22200 / Resistance at 1.22300\", "
-            "\"trend_strength\": \"e.g. 88%\", "
+            "\"support_resistance\": \"Levels\", "
+            "\"trend_strength\": \"Strength\", "
             "\"trade_decision\": \"TRADE (Low Risk) or NO TRADE (High Risk)\", "
-            "\"banglish_logic\": \"Keno CALL ba PUT dilo, tar puro technical explanation (Support/Resistance ba Trend bujhiye) sohoj Banglish a ektu detail a likhba.\"}"
+            "\"banglish_logic\": \"Ek line a choto kore reason Banglish a likhba.\"}"
         )
 
         shuffled_keys = list(API_KEYS)
